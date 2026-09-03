@@ -1,161 +1,109 @@
-# Development Workspace
+# Run the Project
 
-Run the application, tests and experiments from this directory. The
-[dissertation repository](https://github.com/thekhananas/msc-dissertation-report-writing-ak7025) contains the report and its
-build instructions. Local planning documents are not required to run the demo.
+This directory contains the application and experiment commands. Read the
+[dissertation](https://github.com/thekhananas/msc-dissertation-report-writing-ak7025) for the research methods and findings.
 
-## Prerequisites
+## Start the Demo
 
-- Pixi 0.63 or later.
-- Git.
-- D2 0.7.1 for `docs-check` and the complete `check` task. It is not required to start the demo.
+Install Git and Pixi 0.63 or later. The environment supports Apple Silicon macOS and Linux x86-64.
+Pixi installs Python, Node.js and the project dependencies. Start from the repository root:
 
-Python, Node.js, pnpm, and project dependencies are supplied by Pixi.
-
-## First Run
-
-Start in the repository root. Subsequent commands run from `development/`. The lockfile supports macOS on Apple Silicon
-and Linux x86-64. Initial installation requires network access to package registries.
-
-```bash
+```sh
 cd development
 pixi install --locked
 pixi run install-web
 pixi run dev
 ```
 
-Then open `http://127.0.0.1:5173`. Vite proxies `/api` to FastAPI on port 8000.
+Open **http://127.0.0.1:5173/**. Installation needs internet access. The tutor and recorded experiments then work
+without credentials or a `.env` file. The demo estimate is not a validated measure of student learning.
 
-The offline demo offers list aliasing and the distinction between `None` and falsy values. A submitted explanation passes
-through a LangGraph turn, authored evidence rules, a simple tracker and a heuristic policy. The displayed estimate is a
-demonstration state. It has not been validated as a measure of human mastery. Completed turns are written to
-`.local/demo-events.jsonl` and recovered when the API restarts.
+Run all remaining commands from `development/`. Stop the application with Ctrl+C before restarting it.
 
-The Experiment view reads the bundled `data/demo/benchmark-replay-v1.json` and `experiment-summary-v1.json` records.
-Practice and recorded replay require no provider credentials after installation.
+## Enable Live Model Calls
 
-Recorded replay shows the task, submitted code and tests after the outcome is revealed. The probe selection tab displays
-saved choices and error counts for two methods at the same 20-of-40 allocation. The accompanying summary gives the complete
-study comparison. These views do not rerun the experiments.
+Use your own Cerebras API key and Modal account. Create a local settings file:
 
-## Optional Live Illustration
+```sh
+cp -n .env.example .env
+```
 
-The **Experiment** view also contains an optional live illustration. It uses one development case, up to three Cerebras requests,
-and two network-blocked Modal executions to show that predictions are fixed before a later result is requested. It is disabled by
-default and is not research evidence. Complete `pixi run modal setup`, then add these settings to your local `.env` file:
+This preserves an existing `.env`. Open it and uncomment or add these settings, replacing the key placeholder:
 
 ```dotenv
 SOCRATIC_LIVE_EVALUATION_ENABLED=true
 SOCRATIC_LIVE_EVALUATION_CASE_ID=dev-aliasing-001
-SOCRATIC_CEREBRAS_API_KEY=your-local-key
+SOCRATIC_CEREBRAS_API_KEY=your-actual-key
 ```
 
-Restart the application and select **Experiment > Live illustration**. Start one run, inspect its saved predictions and
-select **Reveal live result**. Model requests and sandbox execution may incur provider charges. On a provider or sandbox
-failure, use recorded replay. Keep `.env` private.
+Authenticate with Modal, then start the application:
 
-## Focused Commands
-
-```bash
-pixi run dev-api
-pixi run dev-web
-pixi run test
-pixi run test-web
-pixi run test-e2e
-pixi run lint
-pixi run typecheck
-pixi run config-smoke
-pixi run docs-check
-pixi run build-web
+```sh
+pixi run modal setup
+pixi run dev
 ```
 
-`config-smoke` composes the default Hydra configuration without running a simulation.
+Select **Experiment > Live illustration**. Start a run, inspect its predictions, then select **Reveal live result**.
+A complete run makes up to three Cerebras requests to `gpt-oss-120b` and two Modal executions. These may incur charges.
+This runs a demonstration case. Reproducing the dissertation studies requires the inputs described below.
 
-Before the browser tests, install Chromium:
+Keep `.env` private. To disable live calls, set `SOCRATIC_LIVE_EVALUATION_ENABLED=false` and restart the application.
+
+## Run Checks
+
+| Command | Purpose |
+|---|---|
+| `pixi run build-web` | Production web build |
+| `pixi run check` | Complete checks |
+
+Install Chromium before running browser tests:
 
 ```sh
 pixi run pnpm --dir apps/web exec playwright install chromium
 ```
 
-On Linux, use `playwright install --with-deps chromium` when browser system libraries are missing. This may require
-administrator access. The complete check is `pixi run check`. It also requires D2, even when no local planning documents
-are present. CI installs these prerequisites. `docs-check` compiles local planning diagrams when that directory exists.
+On Linux, add `--with-deps` before `chromium` if system libraries are missing. This may require administrator access.
+The complete checks also require D2 0.7.1. CI installs these dependencies.
 
 ## Analysis Entry Points
 
-Inspect the command options before choosing inputs and an output directory:
+The repository includes demo records and study configurations. Full reproduction also needs saved experiment files or
+the learner dataset. These are excluded from Git. Contact the author listed in the [project README](../README.md#project-details)
+to arrange access to experiment records that can be shared.
 
-```bash
-pixi run python scripts/benchmark_cli.py --help
-pixi run python scripts/acquisition_study_canonical.py --help
-pixi run python scripts/acquisition_study_canonical_analysis.py --help
-pixi run python scripts/csedm_study_reproduce.py --help
-```
+| Study | Command to inspect available options | Required inputs |
+|---|---|---|
+| External model benchmark | `pixi run python scripts/benchmark_cli.py --help` | Saved responses, ratings and execution records |
+| Probe selection simulation | `pixi run python scripts/acquisition_study_canonical.py --help` | Study plans, calibration records and the saved experiment settings |
+| Probe selection analysis | `pixi run python scripts/acquisition_study_canonical_analysis.py --help` | Saved simulation observations and the original environment |
+| Learner records | `pixi run python scripts/csedm_study_reproduce.py --help` | CSEDM dataset archive |
 
-The benchmark commands use authored manifests and recorded responses. Reproducing the external study requires its retained
-response files, ratings and execution records under `artifacts/`. A source checkout alone does not contain those inputs.
-Commands that generate responses or execute code through Modal also require provider access and may incur charges.
+The original probe selection analysis requires revision `5d6e76b099f8904d5a70aca5909b49d6fa0d86af` and its lockfile.
+Use a separate checkout with the retained experiment inputs. The required hashes and paths are in
+[`v1-canonical-primary-analysis.yaml`](configs/acquisition-study/v1-canonical-primary-analysis.yaml).
+The current lockfile differs, so running that analysis directly from the current checkout will fail validation.
 
-The acquisition study uses controlled simulation. Its frozen run and analysis require the plans, calibration and seal records
-specified by the command. Preserve those records when reproducing a result. Creating another seal is a separate run.
+Obtain CSEDM from [DataShop dataset 2865](https://doi.org/10.60710/DATASET-2865), following its access conditions.
+The expected archive is `data/CSEDM_DataChallenge v1.1.zip`. Its checksum and required contents are in
+[`v1-inventory.yaml`](configs/csedm-study/v1-inventory.yaml). Then run:
 
-The canonical acquisition analysis enforces the original lockfile hash recorded in
-`configs/acquisition-study/v1-canonical-primary-analysis.yaml`. Later publication dependencies changed `pixi.lock`, so
-the current checkout cannot automatically reproduce that sealed analysis. Its CLI accepts `--plan` only, and its output
-directory is fixed by the validated plan. Reproduce it in a separate checkout with the matching historical lockfile and
-retained inputs. Keep the original analysis outputs available for comparison. A different analysis revision can change
-recorded version fields and trigger an existing-output conflict. Record the restored revision and any remaining dependency
-differences before reporting successful reproduction.
-
-The retained primary analysis records code revision `5d6e76b099f8904d5a70aca5909b49d6fa0d86af`. Its Git version of
-`development/pixi.lock` has SHA-256 `7d68ee21e33528dc9f3423311f461736f0151ef71f9990607e641876526c7b83`,
-matching the frozen plan. The reference analysis reads 98,000 public rows. Its report content hash is
-`edec72e5a8764d4df5e52c5c09a1de213efeb3e22d4c5972708ec441e70a9d34`. The report file SHA-256 is
-`86ecdd05d4a43111cd7c12f0032667fc898d3d62243804ff13fcc928377ca91e`. These identify the retained result.
-On 11 September 2026, the historical revision was installed in a separate local clone with `pixi install --locked` and
-the primary analysis completed successfully. All six output files matched the retained originals byte for byte. Installation
-used available package caches. This check covers analysis of retained public observations. Simulation regeneration and
-installation on another machine remain unverified.
-
-`pixi run csedm-reproduce` requires the authorised CSEDM archive specified by its plan. Dataset access and sharing conditions
-apply to any shared inputs. Obtain the archive from [DataShop dataset 2865](https://doi.org/10.60710/DATASET-2865).
-The report build instructions are in the separate dissertation repository linked above.
-
-Run the complete CSEDM analysis from `development/` with:
-
-```bash
+```sh
 pixi run csedm-reproduce
 ```
 
-This rebuilds the inventory, features, fitted predictions, analysis and publication outputs. It records the current code
-revision and uses `artifacts/csedm-study/reproduction-<revision>/` by default. For a separate reproduction attempt, choose
-an unused directory through the underlying CLI:
+Results go to `artifacts/csedm-study/reproduction-<revision>/`. Preserve the generated `pipeline_manifest.json`.
+For another run, select an unused output directory:
 
-```bash
+```sh
 pixi run python scripts/csedm_study_reproduce.py --output-root artifacts/csedm-study/reproduction-review-001
 ```
 
-Compare sample counts, predictions and reported statistics with the retained reference run. New revision metadata and
-updated figure wording can change hashes even when scientific results agree. Save the terminal output and the generated
-`pipeline_manifest.json` as the reproduction record.
+## Troubleshooting and Local Files
 
-## Common Failures
+- **Port in use:** stop the previous demo. The web interface uses port 5173 and the API uses port 8000.
+- **Live call fails:** check your Cerebras key and Modal authentication. Use recorded replay if the provider is unavailable.
+- **Missing experiment input:** restore the required records before running the analysis.
+- **Output already exists:** preserve the previous result and choose another output directory when the command permits it.
 
-- **Port already in use:** stop the existing local demo before restarting `pixi run dev`. The default API uses port 8000.
-- **Missing recorded response or report:** restore the required input from the retained experiment package. An empty file
-  cannot replace a missing scientific record.
-- **Immutable artifact conflict:** preserve the existing run. Use the command's output option to select a new directory
-  when the inputs or code have changed. Fixed-output Pixi shortcuts may need their underlying CLI command instead.
-- **Live illustration unavailable:** check the local live settings and Modal authentication. Provider failures can occur
-  after authentication succeeds. Retain the returned error details for diagnosis.
-- **Shell reports a filename as a command:** a multiline command was split incorrectly. Each continuation backslash must
-  be the final character on its line. The short Pixi tasks avoid manual path entry where available.
-
-## Data Policy
-
-- `.local/` contains disposable SQLite and JSONL demo state.
-- `artifacts/` contains generated experiment outputs.
-- Neither directory is committed except for its ignore marker.
-- W&B is optional and never the canonical data store.
-- Keep historical learner archives and reviewer submissions local, with access limited by their applicable conditions.
-- Demo conversations are application records and must not be represented as evidence from a student study.
+Demo conversations are saved in `.local/`. Experiment outputs are saved in `artifacts/`. Both remain local.
+Keep credentials, learner archives and reviewer information out of commits.
