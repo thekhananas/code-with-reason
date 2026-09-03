@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 
 import { revealLiveEvaluation, startLiveEvaluation } from "./api";
 import { newIdempotencyKey } from "./ids";
+import { SourceExcerpt } from "./SourceExcerpt";
 import type { LiveEvaluationSnapshot, LiveEvaluationStatus } from "./types";
 
 type LiveEvaluationPanelProps = {
@@ -106,6 +107,7 @@ export function LiveEvaluationPanel({ status, onUseRecorded }: LiveEvaluationPan
               <span className="step-number">01</span>
               <div>
                 <h4 id="live-answer-title">The model's first answer</h4>
+                <SourceExcerpt label="Prompt sent to the model" text={snapshot.public_prompt} />
                 <pre className="live-response">{snapshot.public_response}</pre>
                 {snapshot.public_assessment !== null && (
                   <p className="live-assessment">
@@ -122,7 +124,9 @@ export function LiveEvaluationPanel({ status, onUseRecorded }: LiveEvaluationPan
               <span className="step-number">02</span>
               <div>
                 <h4 id="live-evidence-title">The model's answer to a separate coding check</h4>
+                <SourceExcerpt label="Extra coding task" text={snapshot.evidence_prompt} />
                 <pre className="live-response">{snapshot.evidence_response}</pre>
+                <SourceExcerpt label="Authored test definitions" text={snapshot.evidence_tests} />
                 {snapshot.evidence_execution !== null && (
                   <p className="live-check-result">
                     {snapshot.evidence_execution.passed_checks} checks passed,{" "}
@@ -178,6 +182,7 @@ export function LiveEvaluationPanel({ status, onUseRecorded }: LiveEvaluationPan
                     </tbody>
                   </table>
                 </div>
+                <SourceExcerpt label="Saved prediction identifier" text={snapshot.commitment_hash} />
               </div>
             </section>
           )}
@@ -209,6 +214,8 @@ export function LiveEvaluationPanel({ status, onUseRecorded }: LiveEvaluationPan
                       <span>Fresh outcome</span>
                     </div>
                     <pre className="live-response">{snapshot.outcome.response}</pre>
+                    <SourceExcerpt label="Later coding task" text={snapshot.outcome.prompt} />
+                    <SourceExcerpt label="Later task tests" text={snapshot.outcome.authored_tests} />
                   </div>
                 )}
               </div>
@@ -227,6 +234,10 @@ export function LiveEvaluationPanel({ status, onUseRecorded }: LiveEvaluationPan
             <div>
               <dt>Provider time</dt>
               <dd>{snapshot.provider_latency_ms} ms</dd>
+            </div>
+            <div>
+              <dt>Total run time</dt>
+              <dd>{((snapshot.elapsed_ms ?? 0) / 1000).toFixed(1)} s</dd>
             </div>
           </dl>
         </>
