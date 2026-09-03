@@ -11,6 +11,18 @@ improved student learning.
 The [dissertation and its build instructions](https://github.com/thekhananas/msc-dissertation-report-writing-ak7025)
 are maintained in a separate repository.
 
+## Project Details
+
+| Field | Details |
+|---|---|
+| Institution | Imperial College London, Department of Computing |
+| Degree | MSc Computing (Individual Project) |
+| Author | Anas Khan (ak7025@ic.ac.uk) |
+| Supervisor | Dr. Konstantinos Gkoutzis |
+| Second Marker | Dr. Thomas Lancaster |
+| Academic Year | 2025-2026 |
+| Submission Date | September 2026 |
+
 ## Run the Demo
 
 Install [Pixi](https://pixi.sh/) and Git. The locked environment supports Apple Silicon macOS and Linux x86-64.
