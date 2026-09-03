@@ -10,7 +10,7 @@ test("completes the offline tutoring turn", async ({ page }, testInfo) => {
   await page.getByRole("button", { name: "Submit response" }).click();
 
   await expect(page.getByText("70%")).toBeVisible();
-  await expect(page.getByText("Correct", { exact: true })).toBeVisible();
+  await expect(page.getByText("Matches the task checks", { exact: true })).toBeVisible();
   await expect(page.getByText("Transfer", { exact: true })).toBeVisible();
   await expect(page.getByText(/change were made through the other name/i)).toBeVisible();
 
@@ -30,7 +30,7 @@ test("changes task and follows different answer paths", async ({ page }) => {
     .getByLabel("Your reasoning")
     .fill("It prints score=0 and then missing because the condition is an identity check.");
   await page.getByRole("button", { name: "Submit response" }).click();
-  await expect(page.getByText("Correct", { exact: true })).toBeVisible();
+  await expect(page.getByText("Matches the task checks", { exact: true })).toBeVisible();
   await expect(page.getByText("Transfer", { exact: true })).toBeVisible();
   await expect(page.getByText(/empty string/i)).toBeVisible();
 
@@ -40,7 +40,7 @@ test("changes task and follows different answer paths", async ({ page }) => {
     .getByLabel("Your reasoning")
     .fill("It prints missing twice because both are falsy, like using if not score.");
   await page.getByRole("button", { name: "Submit response" }).click();
-  await expect(page.getByText("Misconception", { exact: true })).toBeVisible();
+  await expect(page.getByText("Matches a known misconception", { exact: true })).toBeVisible();
   await expect(page.getByText("Hint", { exact: true })).toBeVisible();
   await expect(page.getByText(/general truthiness/i)).toBeVisible();
 });
@@ -50,21 +50,21 @@ const evidenceCases = [
     name: "misconception",
     response: "It prints [1, 2] because alias is an independent copy.",
     mastery: "30%",
-    evidence: "Misconception",
+    evidence: "Matches a known misconception",
     action: "Hint",
   },
   {
     name: "uncertain",
     response: "Append changes something, but I am unsure what is printed.",
     mastery: "50%",
-    evidence: "Uncertain",
+    evidence: "The demo checker needs more evidence",
     action: "Probe",
   },
   {
     name: "empty",
     response: "",
     mastery: "50%",
-    evidence: "Empty",
+    evidence: "No response was provided",
     action: "Encourage",
   },
 ] as const;
