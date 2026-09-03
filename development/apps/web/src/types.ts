@@ -101,6 +101,15 @@ export type RecordedOutcome = {
   passed_checks: number;
   failed_checks: number;
   revealed_at_utc: string;
+  inspection?: {
+    task_prompt: string;
+    submitted_code_excerpt: string;
+    authored_tests: string;
+    proposed_assertion: string;
+    response_hash: string;
+    prompt_ref: string;
+    tests_ref: string;
+  } | null;
 };
 
 export type BenchmarkReplaySnapshot = {
@@ -145,6 +154,28 @@ export type ExperimentSummary = {
   overarching_question: string;
   findings: ExperimentFinding[];
   claim_boundary: string;
+  selector_example?: SelectorExample | null;
+};
+
+export type SelectorExample = {
+  episode_id: string;
+  environment_id: string;
+  selection_rule: string;
+  case_ids: string[];
+  methods: {
+    policy_id: string;
+    label: string;
+    selected_case_ids: string[];
+    error_count: number;
+    source_result_hash: string;
+  }[];
+  aggregate_error_difference: number;
+  aggregate_interval_lower: number;
+  aggregate_interval_upper: number;
+  interval_confidence: number;
+  source_manifest_hash: string;
+  source_report_hash: string;
+  source_episode_hash: string;
 };
 
 export type LiveEvaluationStatus = {
@@ -181,12 +212,15 @@ export type LiveEvaluationSnapshot = {
   phase: "predictions_committed" | "outcome_revealed" | "failed";
   evaluation_model: string;
   public_response: string | null;
+  public_prompt?: string | null;
   public_assessment: {
     category: EvidenceCategory;
     method: "transparent_development_rule";
     rationale: string;
   } | null;
   evidence_response: string | null;
+  evidence_prompt?: string | null;
+  evidence_tests?: string | null;
   evidence_execution: LiveExecution | null;
   predictions: LivePrediction[];
   commitment_hash: string | null;
@@ -195,11 +229,14 @@ export type LiveEvaluationSnapshot = {
     response: string;
     execution: LiveExecution;
     revealed_at_utc: string;
+    prompt?: string | null;
+    authored_tests?: string | null;
   } | null;
   predictions_sealed_before_outcome_reveal: boolean;
   model_calls_made: number;
   sandbox_calls_made: number;
   provider_latency_ms: number;
+  elapsed_ms?: number;
   failure: {
     stage:
       | "public_generation"
