@@ -161,7 +161,10 @@ def test_follow_up_answer_is_checked_against_its_current_question() -> None:
         task,
         StudentSubmission(response_text="False for zero and true for None."),
         incomplete.tracker_after,
-        question_prompt="For the first call only, what Boolean value does score is None produce when score is zero?",
+        question_prompt=(
+            "For the first call only, what Boolean value does score is None produce "
+            "when score is zero?"
+        ),
     )
 
     assert follow_up.evidence.category is EvidenceCategory.CONFLICTING

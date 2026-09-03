@@ -60,7 +60,9 @@ def _classify_follow_up(
     return Evidence(
         category=EvidenceCategory.UNCERTAIN,
         confidence=0.5,
-        rationale="The response does not provide enough recognised evidence for this follow up question.",
+        rationale=(
+            "The response does not provide enough recognised evidence for this follow up question."
+        ),
         observed_signals=observed,
     )
 
