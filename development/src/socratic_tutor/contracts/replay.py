@@ -159,6 +159,46 @@ class ExperimentFindingView(ContractModel):
     source_report_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
+class SelectorMethodExample(ContractModel):
+    """Saved choices and total errors for one policy in a simulated episode."""
+
+    policy_id: str
+    label: str
+    selected_case_ids: tuple[str, ...] = Field(min_length=20, max_length=20)
+    error_count: int = Field(ge=0, le=40)
+    source_result_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class SelectorExample(ContractModel):
+    """Public presentation projection of one saved episode and its aggregate context."""
+
+    episode_id: str
+    environment_id: str
+    selection_rule: str
+    case_ids: tuple[str, ...] = Field(min_length=40, max_length=40)
+    methods: tuple[SelectorMethodExample, ...] = Field(min_length=2, max_length=2)
+    aggregate_error_difference: float = Field(ge=-1, le=1)
+    aggregate_interval_lower: float
+    aggregate_interval_upper: float
+    interval_confidence: float = Field(gt=0, lt=1)
+    source_manifest_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    source_report_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    source_episode_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def validate_selections(self) -> SelectorExample:
+        cases = set(self.case_ids)
+        if len(cases) != 40:
+            raise ValueError("The selector example needs 40 distinct cases")
+        if len({method.policy_id for method in self.methods}) != 2:
+            raise ValueError("The selector example needs two distinct policies")
+        for method in self.methods:
+            selected = set(method.selected_case_ids)
+            if len(selected) != 20 or not selected.issubset(cases):
+                raise ValueError("Each policy must select 20 of the same 40 cases")
+        return self
+
+
 class ExperimentSummaryArtifact(ContractModel):
     """Small public projection of the dissertation's completed studies."""
 
@@ -167,3 +207,4 @@ class ExperimentSummaryArtifact(ContractModel):
     overarching_question: str = Field(min_length=1)
     findings: tuple[ExperimentFindingView, ...] = Field(min_length=1)
     claim_boundary: str = Field(min_length=1)
+    selector_example: SelectorExample | None = None
