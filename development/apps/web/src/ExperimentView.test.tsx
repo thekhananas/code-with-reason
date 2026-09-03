@@ -58,6 +58,15 @@ const revealedReplay: BenchmarkReplaySnapshot = {
     passed_checks: 2,
     failed_checks: 0,
     revealed_at_utc: "2026-09-01T09:03:39Z",
+    inspection: {
+      task_prompt: "Remove the tag from the supplied list and return the remaining tags.",
+      submitted_code_excerpt: "def discard_tag(tags, tag):\n    return sorted(t for t in tags if t != tag)",
+      authored_tests: "expected: [review, urgent]",
+      proposed_assertion: 'assert "new" not in tags',
+      response_hash: "9".repeat(64),
+      prompt_ref: "criterion/prompt.md",
+      tests_ref: "criterion/tests.yaml",
+    },
   },
   interpretation: "The example does not show that relevant evidence caused the change.",
 };
@@ -183,13 +192,16 @@ test("keeps the later result hidden until the recorded outcome is revealed", asy
 
   expect(await screen.findByText("The answer contained two conflicting conclusions.")).toBeVisible();
   expect(screen.getByText("Related coding task")).toBeVisible();
-  expect(screen.getByText("40%")).toBeVisible();
+  expect(screen.getByText("0.40")).toBeVisible();
   expect(screen.getByText(/beat random selection/i)).toBeVisible();
   expect(screen.queryByText("The later answer passed both recorded checks.")).not.toBeInTheDocument();
+  expect(screen.queryByText(/assert "new" not in tags/)).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Reveal recorded result" }));
 
   expect(await screen.findByText("The later answer passed both recorded checks.")).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Why did an incomplete solution pass?" })).toBeVisible();
+  expect(screen.getByText(/assert "new" not in tags/)).toBeVisible();
   expect(screen.getByText(/does not show that relevant evidence caused/i)).toBeVisible();
   expect(fetchMock.mock.calls[3]?.[0]).toBe(
     `/api/benchmark-replays/${committedReplay.replay_id}/reveal`,

@@ -8,13 +8,15 @@ import {
 } from "./api";
 import { newIdempotencyKey } from "./ids";
 import { LiveEvaluationPanel } from "./LiveEvaluationPanel";
+import { RecordedTestInspection } from "./RecordedTestInspection";
+import { SelectorComparison } from "./SelectorComparison";
 import type {
   BenchmarkReplaySnapshot,
   ExperimentSummary,
   LiveEvaluationStatus,
 } from "./types";
 
-type ExperimentMode = "recorded" | "live";
+type ExperimentMode = "recorded" | "live" | "selection";
 
 const unavailableLiveStatus: LiveEvaluationStatus = {
   enabled: false,
@@ -36,7 +38,7 @@ type ExperimentState =
   | { kind: "error"; message: string };
 
 function scoreLabel(score: number): string {
-  return `${Math.round(score * 100)}%`;
+  return score.toFixed(2);
 }
 
 function evidenceTypeLabel(value: string): string {
@@ -52,6 +54,7 @@ export function ExperimentView() {
   const replayKey = useRef(newIdempotencyKey());
   const [state, setState] = useState<ExperimentState>({ kind: "loading" });
   const [mode, setMode] = useState<ExperimentMode>("recorded");
+  const [presentationView, setPresentationView] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
   const [revealError, setRevealError] = useState<string | null>(null);
 
@@ -118,9 +121,10 @@ export function ExperimentView() {
 
   const { replay, summary, liveStatus } = state;
   const showingLive = mode === "live";
+  const showingSelection = mode === "selection";
 
   return (
-    <main className="experiment-page">
+    <main className={`experiment-page${presentationView ? " presentation-view" : ""}`}>
       <section className="experiment-intro" aria-labelledby="experiment-title">
         <div>
           <p className="eyebrow">
@@ -132,11 +136,11 @@ export function ExperimentView() {
         <dl className="experiment-meta">
           <div>
             <dt>Case</dt>
-            <dd>{showingLive ? liveStatus.case_id : replay.case_id}</dd>
+            <dd>{showingSelection ? summary.selector_example?.episode_id : showingLive ? liveStatus.case_id : replay.case_id}</dd>
           </div>
           <div>
             <dt>Evaluation model</dt>
-            <dd>{showingLive ? liveStatus.evaluation_model : replay.evaluation_model}</dd>
+            <dd>{showingSelection ? "Controlled simulation" : showingLive ? liveStatus.evaluation_model : replay.evaluation_model}</dd>
           </div>
           <div>
             <dt>{showingLive ? "Live activity" : "Replay activity"}</dt>
@@ -155,12 +159,23 @@ export function ExperimentView() {
         <button
           type="button"
           role="tab"
-          aria-selected={!showingLive}
+          aria-selected={mode === "recorded"}
           aria-controls="recorded-replay-panel"
           onClick={() => setMode("recorded")}
         >
           Recorded replay
         </button>
+        {summary.selector_example && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={showingSelection}
+            aria-controls="selector-comparison-panel"
+            onClick={() => setMode("selection")}
+          >
+            Probe selection
+          </button>
+        )}
         <button
           type="button"
           role="tab"
@@ -172,12 +187,21 @@ export function ExperimentView() {
         </button>
       </div>
 
+      <label className="presentation-toggle">
+        <input
+          type="checkbox"
+          checked={presentationView}
+          onChange={(event) => setPresentationView(event.target.checked)}
+        />
+        Presentation view
+      </label>
+
       <div className="experiment-layout">
         <section
           id="recorded-replay-panel"
           className="replay-panel"
           aria-labelledby="replay-title"
-          hidden={showingLive}
+          hidden={mode !== "recorded"}
         >
           <div className="experiment-section-heading">
             <div>
@@ -220,6 +244,7 @@ export function ExperimentView() {
             <span className="step-number">03</span>
             <div>
               <h4 id="predictions-title">Predictions fixed before the later task</h4>
+              <p>These are fixed rule scores. A score of 0.60 or more predicts a pass. They are not calibrated probabilities.</p>
               <div className="prediction-table-wrap">
                 <table className="prediction-table">
                   <thead>
@@ -287,6 +312,9 @@ export function ExperimentView() {
                   <p className="test-warning">
                     <strong>Important test limit:</strong> {replay.outcome.test_warning}
                   </p>
+                  {replay.outcome.inspection && (
+                    <RecordedTestInspection inspection={replay.outcome.inspection} />
+                  )}
                   <p className="interpretation-copy">{replay.interpretation}</p>
                 </div>
               )}
@@ -302,6 +330,12 @@ export function ExperimentView() {
             onUseRecorded={() => setMode("recorded")}
           />
         </div>
+
+        {summary.selector_example && (
+          <div id="selector-comparison-panel" hidden={!showingSelection}>
+            <SelectorComparison example={summary.selector_example} />
+          </div>
+        )}
 
         <aside className="findings-panel" aria-labelledby="findings-title">
           <div className="experiment-section-heading">

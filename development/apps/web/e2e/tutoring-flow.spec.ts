@@ -131,10 +131,30 @@ test("replays a recorded experiment before revealing its result", async ({ page 
   await page.getByRole("button", { name: "Reveal recorded result" }).click();
   await expect(page.getByText("The final task asked the model", { exact: false })).toBeVisible();
   await expect(page.getByText("Important test limit:", { exact: false })).toBeVisible();
+  await page.getByRole("heading", { name: "Why did an incomplete solution pass?" }).scrollIntoViewIfNeeded();
+  await expect(page.getByText('assert "new" not in tags', { exact: false })).toBeVisible();
+  await page.getByText("Original test definitions: both passed", { exact: true }).click();
+  await expect(page.getByText("discarded_tag_is_absent", { exact: false })).toBeVisible();
 
   const horizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth - window.innerWidth,
   );
   expect(horizontalOverflow).toBeLessThanOrEqual(0);
   await page.screenshot({ path: testInfo.outputPath("experiment-replay.png"), fullPage: true });
+});
+
+test("shows saved policy selections before revealing episode errors", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Experiment" }).click();
+  await page.getByRole("tab", { name: "Probe selection" }).click();
+  const panel = page.locator("#selector-comparison-panel");
+  await expect(panel.getByText("20 checks selected")).toHaveCount(2);
+  await expect(panel.locator(".case-selected")).toHaveCount(40);
+  await expect(panel.locator(".selection-grid li")).toHaveCount(80);
+  await expect(panel.getByText(/prediction errors out of 40/)).toHaveCount(0);
+  await panel.getByRole("button", { name: "Reveal saved error counts" }).click();
+  await expect(panel.getByText(/prediction errors out of 40/)).toHaveCount(2);
+  await expect(panel.getByText(/0.855 percentage points more errors/)).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+  await page.screenshot({ path: testInfo.outputPath("selector-comparison.png"), fullPage: true });
 });
