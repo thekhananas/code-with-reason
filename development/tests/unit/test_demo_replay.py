@@ -21,12 +21,17 @@ def test_replay_hides_outcome_until_fixed_predictions_are_returned() -> None:
     assert committed.phase is ReplayPhase.PREDICTIONS_COMMITTED
     assert committed.outcome is None
     assert committed.interpretation is None
+    assert "discard_tag" not in committed.model_dump_json()
     assert len(committed.evidence) == 2
     assert len(committed.predictions) == 4
 
     revealed = service.reveal(committed.replay_id)
     assert revealed.phase is ReplayPhase.OUTCOME_REVEALED
     assert revealed.outcome is not None
+    inspection = revealed.outcome.inspection
+    assert inspection is not None
+    assert inspection.task_prompt == (WORKSPACE_ROOT / inspection.prompt_ref).read_text().strip()
+    assert inspection.authored_tests == (WORKSPACE_ROOT / inspection.tests_ref).read_text().strip()
     assert revealed.interpretation is not None
     assert revealed.predictions == committed.predictions
     assert all(

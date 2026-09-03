@@ -52,6 +52,18 @@ class ReplayEvidenceView(ContractModel):
     failed_checks: int = Field(ge=0)
 
 
+class RecordedTestInspection(ContractModel):
+    """Source excerpts and a proposed check, exposed with the recorded outcome."""
+
+    task_prompt: str = Field(min_length=1)
+    submitted_code_excerpt: str = Field(min_length=1)
+    authored_tests: str = Field(min_length=1)
+    proposed_assertion: str = Field(min_length=1)
+    response_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    prompt_ref: str = Field(min_length=1)
+    tests_ref: str = Field(min_length=1)
+
+
 class RecordedOutcomeView(ContractModel):
     """The later result, returned only by the reveal action."""
 
@@ -60,6 +72,7 @@ class RecordedOutcomeView(ContractModel):
     passed_checks: int = Field(ge=0)
     failed_checks: int = Field(ge=0)
     revealed_at_utc: datetime
+    inspection: RecordedTestInspection | None = None
 
 
 class BenchmarkReplayArtifact(ContractModel):

@@ -65,10 +65,19 @@
   ],
   "outcome": {
     "summary": "The final task asked the model to remove a tag from the supplied list, then return the remaining tags in sorted order. Its answer passed both automatic tests.",
-  "test_warning": "The model created a new list, so the supplied list did not change. The tests checked only the returned values. They never checked the supplied list.",
+    "test_warning": "The model created a new list, so the supplied list did not change. The tests checked only the returned values. They never checked the supplied list.",
     "passed_checks": 2,
     "failed_checks": 0,
-    "revealed_at_utc": "2026-09-01T09:03:39.348417Z"
+    "revealed_at_utc": "2026-09-01T09:03:39.348417Z",
+    "inspection": {
+      "task_prompt": "# Held-out assessment: discard a tag from a shared collection\n\nImplement `discard_tag(tags, tag)` so it removes `tag` from the supplied collection and returns the remaining tags in sorted\norder. The input collection is mutable.\n\n```python\ndef discard_tag(tags: list[str], tag: str) -> list[str]:\n    ...\n```",
+      "submitted_code_excerpt": "def discard_tag(tags: list[str], tag: str) -> list[str]:\n    filtered = [t for t in tags if t != tag]\n    return sorted(filtered)",
+      "authored_tests": "schema_id: benchmark.authored_tests.v1\nfunction: discard_tag\nchecks:\n  - name: discarded_tag_is_absent\n    args: {tags: [urgent, new, review], tag: new}\n    expected: [review, urgent]\n  - name: another_tag_can_be_discarded\n    args: {tags: [blue, green, red], tag: green}\n    expected: [blue, red]\nscoring:\n  demonstrated_mastery: all_checks_pass\n  missing: submission_does_not_execute",
+      "proposed_assertion": "tags = [\"urgent\", \"new\", \"review\"]\ndiscard_tag(tags, \"new\")\nassert \"new\" not in tags",
+      "response_hash": "71b24199cfaae62968e18516a62b8b5553b2b8789cc9d95da6502c3f61c6ffcc",
+      "prompt_ref": "data/benchmarks/v1/evaluator/criterion/h-c2m1-02-prompt.md",
+      "tests_ref": "data/benchmarks/v1/evaluator/criterion/h-c2m1-02-tests.yaml"
+    }
   },
   "interpretation": "The related coding task changed the prediction from failure to success. The comparison task caused the same change, and the later test accepted an incomplete solution. This case therefore cannot show that relevant evidence caused a better prediction.",
   "predictions_sealed_before_outcome_reveal": true,
