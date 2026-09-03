@@ -106,6 +106,8 @@ class LiveOutcomeView(ContractModel):
     response: str = Field(min_length=1)
     execution: LiveExecutionView
     revealed_at_utc: datetime
+    prompt: str | None = None
+    authored_tests: str | None = None
 
 
 class LiveFailureView(ContractModel):
@@ -125,8 +127,11 @@ class LiveEvaluationSnapshot(ContractModel):
     phase: LiveEvaluationPhase
     evaluation_model: str = Field(min_length=1)
     public_response: str | None = None
+    public_prompt: str | None = None
     public_assessment: LiveDialogueAssessmentView | None = None
     evidence_response: str | None = None
+    evidence_prompt: str | None = None
+    evidence_tests: str | None = None
     evidence_execution: LiveExecutionView | None = None
     predictions: tuple[LivePredictionView, ...] = ()
     commitment_hash: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
@@ -136,6 +141,7 @@ class LiveEvaluationSnapshot(ContractModel):
     model_calls_made: int = Field(ge=0, le=3)
     sandbox_calls_made: int = Field(ge=0, le=2)
     provider_latency_ms: int = Field(ge=0)
+    elapsed_ms: int = Field(default=0, ge=0)
     failure: LiveFailureView | None = None
     claim_boundary: str = Field(min_length=1)
 

@@ -8,6 +8,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from time import perf_counter
 from typing import Literal, Protocol
 
 import httpx
@@ -25,8 +26,10 @@ from socratic_tutor.benchmark.evaluator.loader import (
 from socratic_tutor.benchmark.evaluator.projection import project_public_manifest
 from socratic_tutor.benchmark.generation import (
     CriterionTaskPayload,
+    EvidenceTaskPayload,
     GenerationRequestSpec,
     ModelRoute,
+    PublicTaskPayload,
     SamplingConfig,
     StudentGenerationRequest,
     create_student_generation_request,
@@ -200,7 +203,11 @@ class LiveEvaluationService:
             if existing is not None:
                 return existing
             self._request_identity[request.idempotency_key] = identity
+            started = perf_counter()
             snapshot = await self._start_locked(run_id)
+            snapshot = _replace_snapshot(
+                snapshot, {"elapsed_ms": round((perf_counter() - started) * 1000)}
+            )
             self._runs[run_id] = snapshot
             return snapshot
 
@@ -218,7 +225,12 @@ class LiveEvaluationService:
                 LiveEvaluationPhase.FAILED,
             }:
                 return committed
+            started = perf_counter()
             revealed = await self._reveal_locked(committed)
+            revealed = _replace_snapshot(
+                revealed,
+                {"elapsed_ms": committed.elapsed_ms + round((perf_counter() - started) * 1000)},
+            )
             self._runs[run_id] = revealed
             return revealed
 
@@ -276,6 +288,9 @@ class LiveEvaluationService:
             )
 
         case = next(item for item in assets.public_manifest.cases if item.case_id == self._case_id)
+        evidence_tests = (assets.benchmark_root / case.evidence_test_ref).read_text(
+            encoding="utf-8"
+        )
         sandbox_calls += 1
         result = await asyncio.to_thread(
             execute_authored_python_tests,
@@ -323,8 +338,11 @@ class LiveEvaluationService:
             phase=LiveEvaluationPhase.PREDICTIONS_COMMITTED,
             evaluation_model=f"{_MODEL_ROUTE.provider}/{_MODEL_ROUTE.model}",
             public_response=public.final_response,
+            public_prompt=_request_prompt(public_request),
             public_assessment=assessment,
             evidence_response=evidence.final_response,
+            evidence_prompt=_request_prompt(evidence_request),
+            evidence_tests=evidence_tests,
             evidence_execution=evidence_execution,
             predictions=predictions,
             commitment_hash=commitment_hash,
@@ -399,6 +417,8 @@ class LiveEvaluationService:
                     response=criterion.final_response,
                     execution=execution,
                     revealed_at_utc=self._clock(),
+                    prompt=_request_prompt(criterion_request),
+                    authored_tests=bundle_path.read_text(encoding="utf-8"),
                 ),
                 "model_calls_made": model_calls,
                 "sandbox_calls_made": sandbox_calls,
@@ -473,6 +493,15 @@ class LiveEvaluationService:
         if self._assets is None or self._gateway is None or self._executor is None:
             raise LiveEvaluationUnavailableError("Live illustration dependencies are unavailable")
         return self._assets, self._gateway, self._executor
+
+
+def _request_prompt(request: StudentGenerationRequest) -> str:
+    payload = request.task_payload
+    if isinstance(payload, PublicTaskPayload):
+        return payload.public_interaction
+    if isinstance(payload, EvidenceTaskPayload):
+        return payload.evidence_probe
+    return payload.criterion_probe
 
 
 def create_live_evaluation_service(settings: Settings) -> LiveEvaluationService:

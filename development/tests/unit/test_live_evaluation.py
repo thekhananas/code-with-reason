@@ -93,10 +93,18 @@ async def _run_live_flow() -> None:
     assert repeated == committed
     assert committed.phase is LiveEvaluationPhase.PREDICTIONS_COMMITTED
     assert committed.outcome is None
+    assert committed.public_prompt is not None
+    assert committed.evidence_prompt is not None
+    assert committed.evidence_tests is not None
+    assert "mutates_caller_list" in committed.evidence_tests
+    assert "snapshot_then_append" not in committed.model_dump_json()
     assert committed.model_calls_made == 2
     assert committed.sandbox_calls_made == 1
     assert revealed.phase is LiveEvaluationPhase.OUTCOME_REVEALED
     assert revealed.outcome is not None
+    assert revealed.outcome.prompt is not None
+    assert "snapshot_then_append" in revealed.outcome.prompt
+    assert revealed.outcome.authored_tests is not None
     assert revealed.predictions == committed.predictions
     assert revealed.commitment_hash == committed.commitment_hash
     assert revealed.model_calls_made == 3
